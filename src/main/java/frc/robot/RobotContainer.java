@@ -80,19 +80,41 @@ public class RobotContainer {
 
         // Reset the field-centric heading on left bumper press.
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-
+        
         drivetrain.registerTelemetry(logger::telemeterize);
     
-        joystick.leftTrigger().whileTrue(
-                new RunCommand(
-            () -> drivetrain.setControl(
+    joystick.leftTrigger().whileTrue(
+    new RunCommand(
+        () -> {
+            
+            int[] allowedTags = {25, 26, 21, 24,27,18,19,20}; // target specific tags
+            
+            int currentTagID = (int) LimelightHelpers.getFiducialID("limelight");
+            double rotationRate = 0;
+            
+            // Check if the current tag is in our allowed list
+            boolean isAllowedTag = false;
+            for (int allowedTag : allowedTags) {
+                if (currentTagID == allowedTag) {
+                    isAllowedTag = true;
+                    break;
+                }
+            }
+            
+            // Only apply Limelight rotation if we're seeing an allowed tag
+            if (isAllowedTag && LimelightHelpers.getTV("limelight")) {
+                rotationRate = LimelightHelpers.getTX("limelight") * -0.06;
+            }
+            
+            drivetrain.setControl(
                 drive.withVelocityX(-joystick.getLeftY() * MaxSpeed)
                     .withVelocityY(-joystick.getLeftX() * MaxSpeed)
-                    .withRotationalRate(LimelightHelpers.getTX("limelight") * -0.07)
-            ),
-            drivetrain
-        )
-    );
+                    .withRotationalRate(rotationRate)
+            );
+        },
+        drivetrain
+    )
+);
         
     }
 
