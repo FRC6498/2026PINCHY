@@ -43,10 +43,15 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
+    private final Climber climber = new Climber();
+
+
     public RobotContainer() {
         configureBindings();
     }
 
+
+    
     private void configureBindings() {
         // Note that X is defined as forward according to WPILib convention,
         // and Y is defined as to the left according to WPILib convention.
@@ -79,11 +84,11 @@ public class RobotContainer {
         joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
         // Reset the field-centric heading on left bumper press.
-        joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        joystick.x().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
         
         drivetrain.registerTelemetry(logger::telemeterize);
     
-    joystick.leftTrigger().whileTrue(
+    joystick.rightTrigger().whileTrue(
     new RunCommand(
         () -> {
             
@@ -115,7 +120,46 @@ public class RobotContainer {
         drivetrain
     )
 );
-        
+            joystick.leftTrigger().whileTrue(
+    new RunCommand(
+        () -> {
+            
+            int[] allowedTags = {32,31}; // target specific tags
+            
+            int currentTagID = (int) LimelightHelpers.getFiducialID("limelight");
+            double rotationRate = 0;
+            
+            // Check if the current tag is in our allowed list
+            boolean isAllowedTag = false;
+            for (int allowedTag : allowedTags) {
+                if (currentTagID == allowedTag) {
+                    isAllowedTag = true;
+                    break;
+                }
+            }
+            
+            // Only apply Limelight rotation if we're seeing an allowed tag
+            if (isAllowedTag && LimelightHelpers.getTV("limelight")) {
+                rotationRate = LimelightHelpers.getTX("limelight") * -0.065;
+            }
+            
+            drivetrain.setControl(
+                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed)
+                    .withVelocityY(-joystick.getLeftX() * MaxSpeed)
+                    .withRotationalRate(rotationRate)
+            );
+        },
+        drivetrain
+    )
+);
+
+// moves climber up
+joystick.rightBumper()
+      .whileTrue(climber.Run());
+    
+    //  moves climber DOWN
+    joystick.leftBumper()
+      .whileTrue(climber.Reverse());
     }
 
     public Command getAutonomousCommand() {
@@ -137,3 +181,4 @@ public class RobotContainer {
         );
     }
 }
+//End program
