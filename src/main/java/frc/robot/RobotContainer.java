@@ -153,6 +153,7 @@ public class RobotContainer {
     )
 );
 
+
 // moves climber up
 joystick.rightBumper()
       .whileTrue(climber.Run());
@@ -180,5 +181,10 @@ joystick.rightBumper()
             drivetrain.applyRequest(() -> idle)
         );
     }
+
+    
 }
+
+
+
 //End program
