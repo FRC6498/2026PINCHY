@@ -26,6 +26,11 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
  * Subsystem so it can easily be used in command-based projects.
@@ -127,6 +132,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         SwerveModuleConstants<?, ?, ?>... modules
     ) {
         super(drivetrainConstants, modules);
+        configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -151,6 +157,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         SwerveModuleConstants<?, ?, ?>... modules
     ) {
         super(drivetrainConstants, odometryUpdateFrequency, modules);
+        configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -183,6 +190,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         SwerveModuleConstants<?, ?, ?>... modules
     ) {
         super(drivetrainConstants, odometryUpdateFrequency, odometryStandardDeviation, visionStandardDeviation, modules);
+        configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
         }
@@ -247,6 +255,35 @@ public Command applyRequest(Supplier<SwerveRequest> request) {
         }
     }
 
+    private void configureAutoBuilder() {
+        SwerveRequest.ApplyRobotSpeeds autoRequest = new SwerveRequest.ApplyRobotSpeeds();
+        try {
+            RobotConfig config = RobotConfig.fromGUISettings(); // read config created from Pathplanner settings GUI
+            AutoBuilder.configure(
+                ()-> getState().Pose, // get robot pose
+                this::resetPose, // supply method to reset pose
+                ()-> getState().Speeds, // get current robot chasis speeds
+                (speeds, feeds) -> setControl(
+                    // applies robot relative chasis speeds and feedforwards
+                    autoRequest
+                    .withSpeeds(speeds)
+                    .withWheelForceFeedforwardsX(feeds.robotRelativeForcesXNewtons())
+                    .withWheelForceFeedforwardsY(feeds.robotRelativeForcesYNewtons())
+                ),
+                 new PPHolonomicDriveController(
+                    new PIDConstants(5), // random PID constants (need to be tuned)
+                    new PIDConstants(5)
+                ), 
+                config, 
+                ()-> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red /*flip the path if on Red Alliance*/, 
+                this
+                );
+        } catch (Exception e) {
+          e.printStackTrace();
+        DriverStation.reportError("Failed to configure AutoBuilder: " + e.getMessage(), e.getStackTrace());
+        }
+    }
+
     private void startSimThread() {
         m_lastSimTime = Utils.getCurrentTimeSeconds();
 
@@ -305,6 +342,6 @@ public Command applyRequest(Supplier<SwerveRequest> request) {
     @Override
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
-    }
+    }                                            
 
 }
