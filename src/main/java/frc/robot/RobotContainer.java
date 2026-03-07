@@ -29,7 +29,7 @@ public class RobotContainer {
     
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
-
+    private final CommandXboxController driverController, operatorController;
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -43,11 +43,14 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-    private final Climber climber = new Climber();
+    //private final Climber climber = new Climber();
 
 
     public RobotContainer() {
+        driverController = new CommandXboxController(0);
+        operatorController = new CommandXboxController(1);
         configureBindings();
+        
     }
 
 
@@ -55,12 +58,13 @@ public class RobotContainer {
     private void configureBindings() {
         // Note that X is defined as forward according to WPILib convention,
         // and Y is defined as to the left according to WPILib convention.
+        
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                drive.withVelocityX(-driverController.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-driverController.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-driverController.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
 
@@ -88,7 +92,7 @@ public class RobotContainer {
         
         drivetrain.registerTelemetry(logger::telemeterize);
     
-    joystick.rightTrigger().whileTrue(
+    operatorController.rightTrigger().whileTrue(
     new RunCommand(
         () -> {
             
@@ -120,7 +124,7 @@ public class RobotContainer {
         drivetrain
     )
 );
-            joystick.leftTrigger().whileTrue(
+            operatorController.leftTrigger().whileTrue(
     new RunCommand(
         () -> {
             
@@ -140,7 +144,8 @@ public class RobotContainer {
             
             // Only apply Limelight rotation if we're seeing an allowed tag
             if (isAllowedTag && LimelightHelpers.getTV("limelight")) {
-                rotationRate = LimelightHelpers.getTX("limelight") * -0.065;
+                rotationRate = LimelightHelpers.getTX("limelight") * -0.06
+                ;
             }
             
             drivetrain.setControl(
@@ -155,13 +160,13 @@ public class RobotContainer {
 
 
 // moves climber up
-joystick.rightBumper()
-      .whileTrue(climber.Run());
+//joystick.rightBumper()
+//      .whileTrue(climber.Run());
     
     //  moves climber DOWN
-    joystick.leftBumper()
-      .whileTrue(climber.Reverse());
-    }
+  //  joystick.leftBumper()
+    //  .whileTrue(climber.Reverse());
+   }
 
     public Command getAutonomousCommand() {
         // Simple drive forward auton
